@@ -27,6 +27,19 @@ public class TimeFrame {
         return date;
     }
 
+    /**
+     * @param other tid att jämföra med
+     * @return returnerar true om other är lika med eller inom this
+     */
+    public boolean contains(TimeFrame other) {
+        if ((this.date.equals(other.date) || this.date.isAfter(other.date))
+                && this.startTime.getHour() <= other.getStartTime().getHour()
+                && this.endTime.getHour() >= other.getEndTime().getHour()) {
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public String toString() {
         return date + ", " + startTime + "-" + endTime;

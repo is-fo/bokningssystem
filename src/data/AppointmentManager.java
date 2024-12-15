@@ -1,5 +1,7 @@
 package data;
 
+import filter.Filter;
+import filter.FilterTimeFrame;
 import models.Booking;
 import models.Customer;
 import models.TimeFrame;
@@ -24,32 +26,18 @@ public class AppointmentManager {
         return instance;
     }
 
-    // TODO: Denna används inte utan görs direkt i databasemanager, ta bort eller gör om så den används här istället
-    // TODO: Uppdatera BookingPanel att använda AppointmentManager.bookAppointment() istället för att direkt göra med DatabaseManager
-    public boolean bookAppointment(Customer customer, String date, String startTime, String endTime) {
-        TimeFrame timeFrame = new TimeFrame(date, startTime, endTime);
-        Booking booking = new Booking(timeFrame, "Booked", customer);
-
-        if (!timeFrameOverlaps(LocalDate.parse(date), timeFrame)) {
-            databaseDao.createBooking(booking);
-            sendConfirmation(booking);
-            return true;
-        }
-        return false;
-    }
-
-    // TODO: gör också så denna används inte dirre i databasemanager
     public boolean cancelAppointment(Booking b) {
         List<Booking> bookings = databaseDao.getAppointmentsForUser(b.getCustomer());
-        for (Booking booking : bookings) {
-            if (booking.getTimeFrame().equals(b.getTimeFrame())) {
-                // Gör bokningen tillgänglig
-                booking.setCustomer(null);
-                booking.setDescription("Available");
-                databaseDao.updateBookingStatus(booking.getTimeFrame(), null);
-                return true;
-            }
+        Filter timeFrameFilter = new FilterTimeFrame(b.getTimeFrame());
+        List<Booking> match = timeFrameFilter.filter(bookings);
+        if (!match.isEmpty()) {
+            Booking bookingToCancel = match.getFirst();
+            bookingToCancel.setCustomer(null);
+            bookingToCancel.setDescription("Available");
+            databaseDao.updateBookingStatus(bookingToCancel.getTimeFrame(), null);
+            return true;
         }
+
         return false;
     }
 
@@ -65,11 +53,6 @@ public class AppointmentManager {
             }
         }
         return false;
-    }
-
-    // TODO: Kan tas bort, skrivs bara ut i terminalen och tas bookappointment bort behövs inte denna heller
-    private void sendConfirmation(Booking booking) {
-        System.out.println("Confirmation sent for booking: " + booking.getTimeFrame());
     }
 
     public List<Booking> getAppointmentsForUser(Customer customer) {

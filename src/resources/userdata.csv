@@ -4,3 +4,4 @@ ID,name,email,phonenumber,password,usertype
 0000000000,admin 123,admin@gmail.com,1111111111,123123,Admin
 1111111111,test123 123,12@me.se,2222222222,1234,Customer
 0012014123,rose philipsen,rosekristine@me.com,0709124202,prut123,Customer
+0101091234,is fo,aa@ff.com,0704341234,123,Customer

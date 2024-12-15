@@ -2,12 +2,15 @@ package gui;
 
 import data.AppointmentManager;
 import data.DatabaseManager;
+import filter.*;
 import models.Booking;
 import models.Customer;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -39,7 +42,6 @@ public class BookingPanel extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-
 
         // Kalender
         gbc.gridx = 0;
@@ -103,7 +105,12 @@ public class BookingPanel extends JPanel {
         calendarTable.setRowHeight(30);
         calendarTable.setOpaque(false);
         calendarTable.setCellSelectionEnabled(true);
-        calendarTable.getSelectionModel().addListSelectionListener(e -> updateTimePanel());
+        calendarTable.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                updateTimePanel();
+            }
+        });
 
         JScrollPane calendarScrollPane = new JScrollPane(calendarTable);
         calendarScrollPane.setOpaque(false);
@@ -189,21 +196,20 @@ public class BookingPanel extends JPanel {
         LocalDate selectedDate = currentMonth.withDayOfMonth(Integer.parseInt(dayObj.toString()));
         timePanel.removeAll();
 
-        List<Booking> bookings = DatabaseManager.getInstance().getAllBookings();
-        for (Booking booking : bookings) {
-            if (booking.getTimeFrame().getDate().equals(selectedDate) &&
-                    "Available".equals(booking.getDescription()) && !booking.isBooked()) {
+        Filter unbookedOnDate = new AndFilter(new FilterOnDate(selectedDate), new NotFilter(new FilterBooked()));
+        List<Booking> filteredBookings = unbookedOnDate.filter(DatabaseManager.getInstance().getAllBookings());
 
-                JButton timeButton = new JButton(booking.getTimeFrame().getStartTime() + " - " +
-                        booking.getTimeFrame().getEndTime());
-                timeButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-                timeButton.setPreferredSize(new Dimension(300, 30));
-                timeButton.setBackground(Color.WHITE);
-                timeButton.addActionListener(e -> handleBooking(selectedDate, booking));
-                timePanel.add(timeButton);
-                timePanel.add(Box.createRigidArea(new Dimension(0, 8))); // Lägger mellanrum mellan knapparna
-            }
-        }
+        filteredBookings.forEach(booking -> {
+            JButton timeButton = new JButton(booking.getTimeFrame().getStartTime() + " - " +
+                    booking.getTimeFrame().getEndTime());
+            timeButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+            timeButton.setPreferredSize(new Dimension(300, 30));
+            timeButton.setBackground(Color.WHITE);
+            timeButton.addActionListener(e -> handleBooking(selectedDate, booking));
+            timePanel.add(timeButton);
+            timePanel.add(Box.createRigidArea(new Dimension(0, 8))); // Lägger mellanrum mellan knapparna
+        });
+
         timePanel.setPreferredSize(new Dimension(400, 250));
         timePanel.revalidate();
         timePanel.repaint();
@@ -241,7 +247,7 @@ public class BookingPanel extends JPanel {
             cancelButton.setFocusable(false);
             cancelButton.setBackground(Color.WHITE);
             cancelButton.addActionListener(e -> {
-                appointmentManager.cancelAppointment(new Booking(booking.getTimeFrame(), booking.getDescription(), customer));
+                appointmentManager.cancelAppointment(booking);
                 JOptionPane.showMessageDialog(this, "Bokning avbokad");
                 refreshBookings(); // Uppdatera listan
             });

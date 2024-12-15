@@ -1,5 +1,6 @@
 package data;
 
+import filter.*;
 import models.Booking;
 import models.Customer;
 import models.TimeFrame;
@@ -97,29 +98,26 @@ public class DatabaseManager implements DatabaseDao {
     // Filtrerar bokningar baserat på användaren
     @Override
     public List<Booking> getAppointmentsForUser(Customer customer) {
-        List<Booking> userBookings = new ArrayList<>();
-        for (Booking booking : bookings) {
-            if (booking.getCustomer() != null && booking.getCustomer().getPID().equals(customer.getPID())) {
-                userBookings.add(booking);
-            }
-        }
-        return userBookings;
+        Filter bookedByThisCustomer = new AndFilter(new FilterBooked(), new FilterPID(customer.getPID()));
+        return bookedByThisCustomer.filter(new ArrayList<>(bookings));
     }
 
     public void updateBookingStatus(TimeFrame timeFrame, Customer customer) {
-        for (Booking booking : bookings) {
-            if (booking.getTimeFrame().equals(timeFrame)) {
-                if (customer == null) {
-                    // Gör bokningen tillgänglig
-                    booking.setCustomer(null);
-                    booking.setDescription("Available");
-                } else {
-                    // Uppdatera kund
-                    booking.setCustomer(customer);
-                    booking.setDescription("Booked");
-                }
+        Filter timeFrameFilter = new FilterTimeFrame(timeFrame);
+        List<Booking> matchingBookings = timeFrameFilter.filter(bookings);
+
+        matchingBookings.forEach(booking -> {
+            if (customer == null) {
+                // Gör bokningen tillgänglig
+                booking.setCustomer(null);
+                booking.setDescription("Available");
+            } else {
+                // Uppdatera kund
+                booking.setCustomer(customer);
+                booking.setDescription("Booked");
             }
-        }
+        });
+
         saveBookingsToFile(); // Uppdatera filen
     }
 }

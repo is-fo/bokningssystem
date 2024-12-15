@@ -1,11 +1,15 @@
 package gui;
 
+import models.Customer;
+
 import javax.swing.*;
 import java.awt.*;
 
 public class StartPanel extends JPanel {
 
     public StartPanel(ViewManager parentFrame) {
+//        parentFrame.showBookingPanel(new Customer("0", "test t", "a@test.b","070","2")); //TODO ta bort
+
 
         Font font = new Font("Times New Roman", Font.BOLD, 16);
 

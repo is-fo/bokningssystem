@@ -6,6 +6,7 @@ import models.TimeFrame;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 
 public class AdminPanel extends JPanel {
 
@@ -74,9 +75,7 @@ public class AdminPanel extends JPanel {
     }
 
     private void updateBookingDetails() {
-        var allBookings = DatabaseManager.getInstance().getAllBookings();
-
-        // TODO: sortera bokningarna i ordning
+        List<Booking> allBookings = DatabaseManager.getInstance().getAllBookings();
 
         StringBuilder details = new StringBuilder("Alla bokningar:\n");
         for (Booking booking : allBookings) {
