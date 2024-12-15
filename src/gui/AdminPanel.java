@@ -95,27 +95,29 @@ public class AdminPanel extends JPanel {
             if (booking.isBooked()) {
                 bookingButton.setBackground(Color.GREEN);
                 bookingButton.addActionListener(e -> {
-
-                 AppointmentManager.getInstance(DatabaseManager.getInstance())
-                        .cancelAppointment(booking);
-                 updateBookingDetails();
+                    int choice = JOptionPane.showConfirmDialog(this, "Vill du avboka?");
+                    if (choice == JOptionPane.YES_OPTION) {
+                        AppointmentManager.getInstance(DatabaseManager.getInstance())
+                                .cancelAppointment(booking);
+                        updateBookingDetails();
+                    }
                 });
             } else {
                 bookingButton.setBackground(Color.RED);
                 bookingButton.addActionListener(e -> {
                     String userPID = JOptionPane.showInputDialog(this, "Ange kundens personnummer: ");
-                    //TODO felhantering ifall ett adminID skrivs in
-                    Customer customer = (Customer)UserDataManager.getInstance().getUser(userPID);
-                    if (customer != null) {
-                        DatabaseManager.getInstance().updateBookingStatus(booking.getTimeFrame(), customer);
-                        JOptionPane.showMessageDialog(this, "Bokat åt: " + customer.getName());
-                        updateBookingDetails();
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Ingen användare hittad.");
+                    if (userPID != null && !userPID.equals("0000000000")) { //lazy
+                        Customer customer = (Customer) UserDataManager.getInstance().getUser(userPID);
+                        if (customer != null) {
+                            DatabaseManager.getInstance().updateBookingStatus(booking.getTimeFrame(), customer);
+                            JOptionPane.showMessageDialog(this, "Bokat åt: " + customer.getName());
+                            updateBookingDetails();
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Ingen användare hittad.");
+                        }
                     }
                 });
             }
-
 
             bookingContainer.add(bookingButton);
             bookingContainer.add(Box.createRigidArea(new Dimension(0, 8))); // Add spacing between buttons
