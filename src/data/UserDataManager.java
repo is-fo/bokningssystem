@@ -76,4 +76,8 @@ public class UserDataManager {
         return (user != null && user.getPassword().equals(password)) ? user : null;
     }
 
+    public User getUser(String id) {
+        return users.get(id);
+    }
+
 }

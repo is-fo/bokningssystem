@@ -1,7 +1,11 @@
 package gui;
 
+import data.AppointmentManager;
+import data.DatabaseDao;
 import data.DatabaseManager;
+import data.UserDataManager;
 import models.Booking;
+import models.Customer;
 import models.TimeFrame;
 
 import javax.swing.*;
@@ -10,7 +14,7 @@ import java.util.List;
 
 public class AdminPanel extends JPanel {
 
-    private final JTextArea bookingDetails;
+    private final JPanel bookingContainer;
 
     public AdminPanel() {
 
@@ -39,14 +43,14 @@ public class AdminPanel extends JPanel {
         headerLabel.setBorder(BorderFactory.createEmptyBorder(10, 0, 10, 0));
         overlayPanel.add(headerLabel, BorderLayout.NORTH);;
 
-        // Textområdet för att visa bokningar
-        bookingDetails = new JTextArea();
-        bookingDetails.setFont(font.deriveFont(Font.PLAIN).deriveFont(14.0f));
-        bookingDetails.setForeground(Color.BLACK);
-        bookingDetails.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(bookingDetails);
-        scrollPane.setOpaque(false);
-        scrollPane.getViewport().setOpaque(false);
+        //området för att visa bokningar
+        bookingContainer = new JPanel();
+        bookingContainer.setLayout(new BoxLayout(bookingContainer, BoxLayout.Y_AXIS));
+        bookingContainer.setFont(font.deriveFont(Font.PLAIN).deriveFont(14.0f));
+        bookingContainer.setForeground(Color.BLACK);
+        JScrollPane scrollPane = new JScrollPane(bookingContainer);
+
+
         overlayPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Knapp-panel för admin-funktioner
@@ -76,20 +80,51 @@ public class AdminPanel extends JPanel {
 
     private void updateBookingDetails() {
         List<Booking> allBookings = DatabaseManager.getInstance().getAllBookings();
+        bookingContainer.removeAll();
 
-        StringBuilder details = new StringBuilder("Alla bokningar:\n");
         for (Booking booking : allBookings) {
-            details.append(booking.getTimeFrame().getDate()).append(" | ")
-                    .append(booking.getTimeFrame().getStartTime()).append(" - ")
-                    .append(booking.getTimeFrame().getEndTime()).append(" | ");
+            String buttonText = booking.getTimeFrame().getDate() + " | " +
+                    booking.getTimeFrame().getStartTime() + " - " +
+                    booking.getTimeFrame().getEndTime() + " | " +
+                    (booking.isBooked() ? "Bokad av: " + booking.getCustomer().getName() : "Tillgänglig");
+
+            JButton bookingButton = new JButton(buttonText);
+            bookingButton.setPreferredSize(new Dimension(300, 30));
+            bookingButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+
             if (booking.isBooked()) {
-                details.append("Bokad av: ").append(booking.getCustomer().getName());
+                bookingButton.setBackground(Color.GREEN);
+                bookingButton.addActionListener(e -> {
+                    int choice = JOptionPane.showConfirmDialog(this, "Vill du avboka?");
+                    if (choice == JOptionPane.YES_OPTION) {
+                        AppointmentManager.getInstance(DatabaseManager.getInstance())
+                                .cancelAppointment(booking);
+                        updateBookingDetails();
+                    }
+                });
             } else {
-                details.append("Tillgänglig");
+                bookingButton.setBackground(Color.RED);
+                bookingButton.addActionListener(e -> {
+                    String userPID = JOptionPane.showInputDialog(this, "Ange kundens personnummer: ");
+                    if (userPID != null && !userPID.equals("0000000000")) { //lazy
+                        Customer customer = (Customer) UserDataManager.getInstance().getUser(userPID);
+                        if (customer != null) {
+                            DatabaseManager.getInstance().updateBookingStatus(booking.getTimeFrame(), customer);
+                            JOptionPane.showMessageDialog(this, "Bokat åt: " + customer.getName());
+                            updateBookingDetails();
+                        } else {
+                            JOptionPane.showMessageDialog(this, "Ingen användare hittad.");
+                        }
+                    }
+                });
             }
-            details.append("\n");
+
+            bookingContainer.add(bookingButton);
+            bookingContainer.add(Box.createRigidArea(new Dimension(0, 8))); // Add spacing between buttons
         }
-        bookingDetails.setText(details.toString());
+
+        bookingContainer.revalidate();
+        bookingContainer.repaint();
     }
 
     private void addAvailableTime() {
